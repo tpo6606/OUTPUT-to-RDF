@@ -1,3 +1,0 @@
-/* REXX                                                              */
-/* Do nothing Exec. Exists only to fire TPRECVR CMD rule.            */
-Exit                                                                   
