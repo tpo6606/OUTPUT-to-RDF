@@ -1,0 +1,81 @@
+/* REXX                                                             */
+/********************************************************************/
+/* Queue up all output sending to TPTEST to pull and give an ID to  */
+/* line of output inserted into the RDF table TP_TEST to be later   */
+/* processed. Queue OUTPUT_ID defines ID name for the output.       */
+/* ; defines the end of output and indicate new ID name for next    */
+/* block of output to be queued or indicate the end.                */
+/********************************************************************/
+trace o
+parse arg @Log @Cnt @Date @Time
+x = OPSCLEDQ()
+/*******************************************************************/
+/* Ensure that Log inquiries has the date/time in correct format   */
+/* for an hour prior if not specified. Included is MSGCOUNT        */
+/* default is 50 messages if not specified.                        */
+/*******************************************************************/
+If @Cnt = '' | @Cnt = 'n' then @Cnt = '50'
+If @Date = '' | @Date = 'n'then do
+@Date = SPACE(Date('N'),0,'0')
+End
+If Length(@Date) = '8' then do
+@Date = '0'||@Date
+End
+If @Time = '' | @Time = 'n' then do
+@hr = SUBSTR(TIME(),1,2)
+   If substr(@hr,1,1) = '0' then @hr = Substr(TIME(),2,1)
+   If @hr = '0' then @hr = '24'
+   @hr = @hr - 1
+   If length(@hr) < 2 then @hr = '0' || @hr
+   @Time = @hr || substr(TIME(),3,3)
+End
+/*******************************************************************/
+/* Capturing Message ID or keyword for log search as per request.  */
+/*******************************************************************/
+queue 'OUTPUT_ID DATETIME'
+queue 'DATE:' DATE('U') 'TIME:' TIME()
+queue ';'
+queue 'OUTPUT_ID OPSLOG'
+I = 0
+J = 0
+@INFO. = ''
+@INFO.0 = 0
+VAR = OPSLOG('EXTRACT MSGCOUNT('@Cnt') TIME('@Time') DATE('@Date')',
+     'OUTCOLS(TIME,DATE) CMDRESP(REXX) PREFIX(@INFO)')
+DO I = 1 TO @INFO.0
+   IF POS(@Log,@INFO.I) > '0' THEN DO
+   queue @INFO.I
+   End
+I = I + 1
+End
+queue ';'
+queue 'OUTPUT_ID DAL'
+Address 'OPER' "C('D A,L')"
+queue ';'
+queue 'OUTPUT_ID DSPOOL'
+ADDRESS 'OPER' "C('$D SPOOL')"
+queue ';'
+/*
+queue 'OUTPUT_ID CREATE'
+queue '//CREATE JOB (ACCT),POLIZZI,CLASS=A,MSGCLASS=A,             '
+queue '//        MSGLEVEL=(1,1)                                    '
+queue '//*  */                                                     '
+queue '//CREATE     EXEC PGM=IEFBR14                               '
+queue '//SYSPRINT DD SYSOUT=*                                      '
+queue '//DD1        DD DSN=TOTDP.NEW.PDS,DISP=(NEW,CATLG,DELETE),  '
+queue '//              SPACE=(TRK,(3,2)),                          '
+queue '//              DCB=(DSORG=PS,RECFM=FB,LRECL=80,BLKSIZE=800)'
+queue '//SYSIN DD DUMMY                                            '
+queue ';'
+*/
+/*
+ADDRESS 'OPER' "C('D IPLINFO')"
+queue ';'
+queue '/* REXX */'
+queue '@T = "HELLO FROM TPTEST ROUTINE"'
+queue 'ADDRESS WTO "TEXT("'"@T"'") MSGID(''TASK1234'')"'
+queue 'exit'
+queue ';'
+*/
+CALL 'TPTEST'
+exit (rc)

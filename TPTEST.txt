@@ -1,0 +1,101 @@
+/* rexx                                                         */
+/* This EXEC is called from TPINPUT that queues command output. */
+/* TPTEST will pull from the queue and send the assigned        */
+/* output to TP_TEST table allowing up to 80 Chars per line of  */
+/* output destined to the OUTPUT_DATA column. An OUTPUT ID may  */
+/* be specified by queuing the first line up for each output    */
+/* inquiry desired with word OUTPUT_ID to insert ID in OUTPUT_ID*/
+/* furthest to the right of the table. OUTPUT_ID must be no more*/
+/* than 8 Chars long. This routine can generate a limitless     */
+/* amount of output data and OUTPUT IDs matching that specify   */
+/* the specific section of output desired. This can then be used*/
+/* as inquiry of data from routines. All they would need to     */
+/* specify is the OUTPUT ID to receive the data in search of    */
+/* from the table reading the output with the matched output ID.*/
+trace o
+Signal on Error
+Signal on Failure
+Signal on NoValue
+@num = 1
+j = 1
+i = 0
+n = 1
+@skip1 = 0
+@data.n. = ''
+@data.n.0 = 0
+@data = ''
+@data1 = ''
+Do while queued() > 0
+   parse pull @data
+
+/* To identify your output to the table, specify OUTPUT_ID as the     */
+/* first word in the queue and make sure the OUTPUT_ID is no more than*/
+/* 8 characters long.                                                 */
+
+   @skip1 = 0
+   @data1 = Strip(@data)
+   If POS('OUTPUT_ID',@data1) Then @Oid = WORD(@data1,2)
+   i = i + 1
+   @data.n.i = @data1
+   @data.n.0 = @data.n.0 + 1
+   j = j + 1
+   If POS('OUTPUT_ID',@data.n.i) then @skip1 = 1
+   If @data.n.i = ';' then @skip1 = 1
+   If j = 100 then leave
+   If @skip1 = 0 then do
+   ADDRESS SQL "INSERT INTO TP_TEST ",
+                            "(OUTPUT_DATA, OUTPUT_ID)",
+                      "VALUES('"@data.n.i"' '"@Oid"')"
+   End
+
+/* The ; is used to end output of one function. It is either end of */
+/* queued output or signifies new queued output of data with a new  */
+/* Output identifier.                                               */
+
+   if @data1 = ';' then do
+      @data.n.0 = @data.n.0 + 1
+      if j = 100 then leave
+      n = n + 1
+      @data.n. = ''
+      @data.n.0 = 0
+      i = 0
+   END
+END
+EXIT 0
+ERROR:
+SAY "AN ERROR OCCURRED RC=" RC
+EXIT
+FAILURE:
+SAY "ROUTINE HAS FAILED WITH RC=" RC
+EXIT
+NOVALUE:
+SAY "A VARIABLE WAS REFERENCED BEFORE ASSIGNED A VALUE. RC=" RC
+EXIT
+/*
+Cmd.Text = DATE DATE('B') TIME('M')
+Parse Upper Var Cmd.Text . @Dateb @Time
+@Newdate = Date(,@Dateb,'B')
+say @Newdate
+*/
+/*
+one = 'Word1'
+two = 'word2'
+three = '120'
+ADDRESS 'OSF' "OI TPRECV" one two '120' */
+/*
+trace o
+x = OPSLOG('L','1','1000000','$HASP395')
+Do while queued() > 0
+parse pull info
+if POS('CREATE',info) > '0' then do
+say info
+end
+end */
+/*
+@Time = SUBSTR(time(),1,5)
+say @Time */
+/* var = opsinfo('SYSCLONE')
+say var */
+/* PARSE SOURCE . . execname .
+T = 'TEST: You are not authorized to issue this command.'
+ADDRESS WTO "TEXT('"T"') MSGID('TESTMSG1')" */

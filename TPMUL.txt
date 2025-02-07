@@ -1,0 +1,83 @@
+/* REXX */
+trace o
+OPSCLEDQ()
+Call TPRECV "DATETIME DATE 2"
+OPSCLEDQ()
+
+RTVL = OPSVALUE('GLOBAL3.TPTEST','U','1')
+
+Call TPRECV "DATETIME TIME 4"
+OPSCLEDQ()
+
+Call TPRECV "DAL TSGIC"
+
+do while queued() > '0'
+Parse upper pull @text
+
+   If POS('NOT FOUND',@text) > 0 then do
+   RTVL = OPSVALUE('GLOBAL3.TPTEST','U','0')
+   parse var @text @Task .
+   Call TPRECV "OPSLOG "@Task" 1 ABEND 1000 n 06:00"
+   parse pull . @tar
+   say 'Time of '@Task' Abend:' @tar
+   OPSCLEDQ()
+   RTVL = OPSVALUE('GLOBAL3.TPTEST','U','1')
+   Call TPRECV "OPSLOG "@Task" 2"
+   parse pull . @tar
+   say 'Date of '@Task' Abend:' @tar
+   OPSCLEDQ()
+   Call TPRECV "OPSLOG "@Task" 3"
+   parse pull . @tar
+   say 'MSGID of '@Task' ABEND:' @tar
+   OPSCLEDQ()
+   End
+End
+OPSCLEDQ()
+
+queue 'OUTPUT_ID TEST'
+queue 'TESTING ABILITY TO ADD TO TABLE WITHOUT REFRESH IN SAME ROUTINE'
+queue ';'
+Call 'TPTEST'
+OPSCLEDQ()
+
+i = 1
+@Dev. = ''
+@Dev.0 = 0
+y = OPSDEV('D','DASD','O')
+Do while queued() > 0
+pull @Dev .
+If @Dev = '9440' then @processing = 1
+   If @processing = 1 then do
+   @Dev.0 = @Dev.0 + 1
+   @Dev.i = @Dev
+   If @Dev.i = '9449' then @processing = 0
+   i = i + 1
+   End
+End
+if @Dev.0 >= '0' then do
+queue 'OUTPUT_ID DASD'
+queue 'Online DASD from 9440-9449: '@Dev.0
+queue ';'
+
+Call 'TPTEST'
+End
+OPSCLEDQ()
+
+Call TPRECV "DAL JES2"
+OPSCLEDQ()
+
+Call TPRECV "TEST TEST 2"
+OPSCLEDQ()
+
+Call TPRECV "DASD DASD 5"
+parse pull . @Dev
+if @Dev < 5 then do
+say 'DASD from 9440-9449 are not all online, varying devices online.'
+say 'v (9440-9449),online'
+End
+else say 'All DASD devices in specified range currently online'
+OPSCLEDQ()
+
+RTVL = OPSVALUE('GLOBAL3.TPTEST','U','0')
+
+Exit

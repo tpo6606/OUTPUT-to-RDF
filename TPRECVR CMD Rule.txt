@@ -1,0 +1,13 @@
+)CMD TPRECVR                                                          
+)INIT                                                                 
+/********************************************************************/
+/* WRITTEN BY TRAVIS POLIZZI.                                       */
+/* TPRECVR WILL EXECUTE A ROUTINE WITH MULTIPLE INQUIRIES ON TP_TEST*/
+/* TABLE. PASS THE PARM OF THE EXEC YOU WOULD LIKE TO INVOKE        */
+/* TO INTERROGATE AND ANALYZE DATA OUTPUT GENERATED IN TP_TEST.     */
+/********************************************************************/
+)PROC                                                                 
+TRACE O                                                               
+PARSE ARG . @EXEC                                                     
+ADDRESS 'OSF' "OI "@EXEC""                                            
+RETURN 'ACCEPT'                                                       
